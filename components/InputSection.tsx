@@ -9,14 +9,17 @@ interface InputSectionProps {
 export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingStatus }) => {
   const [input, setInput] = useState('');
 
+  // Determine if the app is currently processing a request
+  const isLoading = loadingStatus === LoadingState.ANALYZING || loadingStatus === LoadingState.GENERATING_MEDIA;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && loadingStatus === LoadingState.IDLE) {
+    // Fix: Allow search if we have input and are NOT currently loading. 
+    // Previously blocked if status was COMPLETE or ERROR.
+    if (input.trim() && !isLoading) {
       onSearch(input.trim());
     }
   };
-
-  const isLoading = loadingStatus !== LoadingState.IDLE && loadingStatus !== LoadingState.ERROR && loadingStatus !== LoadingState.COMPLETE;
 
   return (
     <div className="w-full max-w-2xl mx-auto text-center py-10">
@@ -59,7 +62,7 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
         </div>
       </form>
       
-      {loadingStatus !== LoadingState.IDLE && loadingStatus !== LoadingState.ERROR && (
+      {isLoading && (
          <div className="mt-4 text-sm font-medium text-primary animate-pulse">
            {loadingStatus === LoadingState.ANALYZING && "正在解构词源与释义..."}
            {loadingStatus === LoadingState.GENERATING_MEDIA && "正在生成记忆图像与助记音乐..."}
