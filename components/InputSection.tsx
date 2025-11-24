@@ -24,7 +24,7 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
         Nicole<span className="text-primary">单词通</span>
       </h1>
       <p className="text-gray-500 mb-8 text-lg">
-        探索单词的起源，声音与灵魂。
+        Nicole的专属单词魔法书 —— 探索单词的起源，声音与灵魂。
       </p>
 
       <form onSubmit={handleSubmit} className="relative flex items-center">
@@ -32,7 +32,7 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
           <input
             type="text"
             className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm transition-all text-gray-700 bg-white"
-            placeholder="输入想学习的英语单词..."
+            placeholder="Nicole, 今天想学哪个单词？"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}

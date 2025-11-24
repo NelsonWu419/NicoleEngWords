@@ -33,14 +33,38 @@ export const WordCard: React.FC<WordCardProps> = ({ data, audioData }) => {
     }
   };
 
+  // Helper to highlight stressed syllables in IPA
+  const renderPhoneticWithStress = (phonetic: string) => {
+    // Split by primary stress marker (usually ˈ or ')
+    // Note: Standard IPA uses ˈ, but sometimes ' is used.
+    const parts = phonetic.split(/([ˈ'])/);
+    
+    return (
+        <span className="font-mono text-gray-700">
+            {parts.map((part, index) => {
+                if (part === 'ˈ' || part === "'") {
+                    return <span key={index} className="text-red-500 font-bold text-xl mx-0.5">ˈ</span>;
+                }
+                // If the previous part was a stress marker, the current part is the stressed syllable (mostly)
+                const isStressed = index > 0 && (parts[index - 1] === 'ˈ' || parts[index - 1] === "'");
+                return (
+                    <span key={index} className={isStressed ? "font-bold text-gray-900" : ""}>
+                        {part}
+                    </span>
+                );
+            })}
+        </span>
+    );
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-6 md:p-8">
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-6 md:p-8 animate-fadeInScale">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
           <h2 className="text-5xl font-extrabold text-gray-900 tracking-tight">{data.word}</h2>
           <div className="flex items-center gap-3 mt-2 text-gray-500">
+             {/* Simple phonetic display in header */}
             <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm text-gray-700">{data.phonetic}</span>
-            <span className="text-sm border-l pl-3 border-gray-300">{data.pronunciationTips}</span>
           </div>
         </div>
         
@@ -77,6 +101,26 @@ export const WordCard: React.FC<WordCardProps> = ({ data, audioData }) => {
       <p className="text-xl text-gray-700 font-medium leading-relaxed mb-6">
         {data.definition}
       </p>
+
+      {/* Pronunciation Analysis Section */}
+      <div className="mb-6 bg-orange-50 rounded-xl p-5 border border-orange-100 flex flex-col md:flex-row gap-5 items-start">
+        <div className="flex-shrink-0 bg-orange-100 p-3 rounded-full text-orange-500">
+           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+           </svg>
+        </div>
+        <div className="flex-grow">
+             <h4 className="text-sm font-bold text-orange-800 uppercase tracking-wider mb-2">发音实验室 (Pronunciation Lab)</h4>
+             <div className="flex items-center gap-3 mb-2">
+                 <span className="text-2xl bg-white px-3 py-1 rounded-md shadow-sm border border-orange-100">
+                    {renderPhoneticWithStress(data.phonetic)}
+                 </span>
+             </div>
+             <p className="text-gray-700 text-sm leading-relaxed">
+                 {data.pronunciationTips}
+             </p>
+        </div>
+      </div>
 
       {/* Mnemonic Chant Box */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-100">

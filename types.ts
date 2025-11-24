@@ -32,3 +32,10 @@ export interface AppState {
   audioData: Uint8Array | null; // Raw PCM data
   error: string | null;
 }
+
+export interface QuizResult {
+  date: string;
+  score: number;
+  totalQuestions: number;
+  correctCount: number;
+}
