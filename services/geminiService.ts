@@ -20,13 +20,14 @@ export const analyzeWord = async (word: string): Promise<WordAnalysis> => {
     3. Etymology: Explain the word's origin and evolution in simple, engaging Chinese suitable for a middle schooler.
     4. PronunciationTips: Analyze pronunciation in Chinese. 1. Stress: Explicitly point out the stressed syllable (e.g. "重音在第一个音节"). 2. Common Errors: Warn about specific sounds Chinese speakers often mispronounce (e.g., "注意 'v' 不要读成 'w'").
     5. Roots: Identify root words/prefixes/suffixes. Provide the 'meaning' in Chinese.
-    6. SimilarWords: Synonyms or words with similar roots (in English).
-    7. Story: A creative short story (approx 60-80 words) in Simple English suitable for Nicole. 
+    6. Synonyms: List 3-5 synonyms (English words).
+    7. Antonyms: List 3-5 antonyms (English words).
+    8. Story: A creative short story (approx 60-80 words) in Simple English suitable for Nicole. 
        CRITICAL REQUIREMENT: The story MUST feature characters from "The Legend of Luo Xiaohei" (罗小黑战记) such as Xiaohei (小黑), Wuxian (无限), or Fengxi (风息). 
        Example: "Xiaohei was running through the forest..." 
        The story should illustrate the meaning of the word "${word}" clearly in the context of an adventure or daily life in the spirit world. Keep the tone healing and cute.
-    8. MnemonicChant: A rhythmic English poem or chant (2-4 lines) that rhymes and helps remember the meaning.
-    9. VisualPrompt: A detailed visual image prompt (in English) describing a scene from the story. 
+    9. MnemonicChant: A rhythmic English poem or chant (2-4 lines) that rhymes and helps remember the meaning.
+    10. VisualPrompt: A detailed visual image prompt (in English) describing a scene from the story. 
        Style requirement: "2D anime style, flat colors, clean lines, cute, healing style, similar to The Legend of Luo Xiaohei art style".
   `;
 
@@ -54,12 +55,13 @@ export const analyzeWord = async (word: string): Promise<WordAnalysis> => {
               },
             },
           },
-          similarWords: { type: Type.ARRAY, items: { type: Type.STRING } },
+          synonyms: { type: Type.ARRAY, items: { type: Type.STRING } },
+          antonyms: { type: Type.ARRAY, items: { type: Type.STRING } },
           story: { type: Type.STRING },
           mnemonicChant: { type: Type.STRING },
           visualPrompt: { type: Type.STRING },
         },
-        required: ["word", "definition", "etymology", "roots", "story", "visualPrompt", "mnemonicChant"],
+        required: ["word", "definition", "etymology", "roots", "story", "visualPrompt", "mnemonicChant", "synonyms", "antonyms"],
       },
     },
   });

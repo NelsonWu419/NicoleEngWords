@@ -11,7 +11,8 @@ export interface WordAnalysis {
   etymology: string;
   pronunciationTips: string;
   roots: RootInfo[];
-  similarWords: string[];
+  synonyms: string[]; // Changed from similarWords
+  antonyms: string[]; // New field
   story: string;
   mnemonicChant: string; // Rhythmic text for audio generation
   visualPrompt: string; // Prompt for image generation

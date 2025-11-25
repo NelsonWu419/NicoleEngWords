@@ -185,8 +185,12 @@ const App: React.FC = () => {
                         {/* Etymology & Roots */}
                         <EtymologySection data={state.data} />
 
-                        {/* Similar Words */}
-                        <SimilarWordsSection words={state.data.similarWords} onWordClick={handleSearch} />
+                        {/* Similar Words (Split into Synonyms and Antonyms) */}
+                        <SimilarWordsSection 
+                            synonyms={state.data.synonyms} 
+                            antonyms={state.data.antonyms} 
+                            onWordClick={handleSearch} 
+                        />
 
                         {/* Story & Image */}
                         <StoryCard 
