@@ -8,9 +8,10 @@ interface StoryCardProps {
   imageUrls: (string | null)[];
   isLoading?: boolean;
   targetWord: string;
+  onRegenerateImage: (index: number) => void;
 }
 
-export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, isLoading = false, targetWord }) => {
+export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, isLoading = false, targetWord, onRegenerateImage }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Reset index when content changes
@@ -93,7 +94,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
                    />
                ) : (
                    <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-900 p-8">
-                       <div className="text-center">
+                       <div className="text-center flex flex-col items-center">
                            {isLoading ? (
                                <>
                                    <svg className="animate-spin w-10 h-10 mx-auto mb-3 text-primary/50 dark:text-indigo-400/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -105,8 +106,16 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
                            ) : (
                                <>
                                    <div className="mb-2 opacity-30 text-6xl">🎨</div>
-                                   <p className="text-sm font-medium">暂无图像</p>
-                                   <p className="text-xs mt-1 text-gray-300 dark:text-gray-600">重新搜索以生成新图像</p>
+                                   <p className="text-sm font-medium mb-3">暂无图像</p>
+                                   <button 
+                                      onClick={() => onRegenerateImage(currentIndex)}
+                                      className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm font-medium text-primary dark:text-indigo-400 shadow-sm hover:shadow hover:bg-gray-50 dark:hover:bg-gray-600 transition-all active:scale-95"
+                                   >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      重新生成图片
+                                   </button>
                                </>
                            )}
                        </div>

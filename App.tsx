@@ -133,6 +133,43 @@ const App: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleRegenerateImage = async (index: number) => {
+    if (!state.data) return;
+
+    // Set a temporary loading state for logic purposes, though we handle UI in component
+    // We don't want to reset the whole status to GENERATING_MEDIA as it might block other interactions
+    // Instead, we can temporarily clear the image URL at that index to trigger loading view in StoryCard
+    const newImageUrls = [...state.imageUrls];
+    newImageUrls[index] = null;
+    setState(prev => ({ ...prev, imageUrls: newImageUrls, status: LoadingState.GENERATING_MEDIA }));
+
+    try {
+      let prompt = "";
+      if (state.data.scenes && state.data.scenes.length > 0) {
+        prompt = state.data.scenes[index]?.visualPrompt;
+      } else {
+        prompt = state.data.visualPrompt;
+      }
+
+      if (!prompt) throw new Error("No prompt found");
+
+      const newImageUrl = await generateWordImage(prompt);
+      
+      setState(prev => {
+        const updatedUrls = [...prev.imageUrls];
+        updatedUrls[index] = newImageUrl;
+        return {
+          ...prev,
+          imageUrls: updatedUrls,
+          status: LoadingState.COMPLETE
+        };
+      });
+    } catch (e) {
+      console.error("Failed to regenerate image", e);
+      setState(prev => ({ ...prev, status: LoadingState.COMPLETE })); // Revert status
+    }
+  };
+
   const handleSearch = async (word: string) => {
     setState({
       status: LoadingState.ANALYZING,
@@ -280,6 +317,7 @@ const App: React.FC = () => {
                             imageUrls={state.imageUrls} 
                             isLoading={state.status === LoadingState.GENERATING_MEDIA}
                             targetWord={state.data.word}
+                            onRegenerateImage={handleRegenerateImage}
                         />
                     </div>
                 )}
