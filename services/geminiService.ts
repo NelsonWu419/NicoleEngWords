@@ -3,6 +3,9 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { WordAnalysis } from "../types";
 import { base64ToUint8Array } from "./audioUtils";
 
+// Declare process to satisfy TypeScript for the build-time replacement
+declare const process: any;
+
 // Initialize the client
 // NOTE: We assume process.env.API_KEY is available as per instructions.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
