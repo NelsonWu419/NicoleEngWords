@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { InputSection } from './components/InputSection';
 import { WordCard } from './components/WordCard';
@@ -17,6 +16,9 @@ const FAVORITES_KEY = 'nicole_favorites';
 
 type ViewMode = 'LEARN' | 'REVIEW';
 type Theme = 'light' | 'dark';
+
+// Helper to prevent hitting API rate limits
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('LEARN');
@@ -237,6 +239,11 @@ const App: React.FC = () => {
 
       // We process them one by one
       for (let i = 0; i < prompts.length; i++) {
+          if (i > 0) {
+            // Add a short delay between requests to be gentle on the API
+            await delay(500);
+          }
+          
           try {
               const imgUrl = await generateWordImage(prompts[i]);
               setState(prev => {
