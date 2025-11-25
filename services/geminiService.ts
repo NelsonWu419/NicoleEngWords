@@ -6,9 +6,21 @@ import { base64ToUint8Array } from "./audioUtils";
 // Declare process to satisfy TypeScript for the build-time replacement
 declare const process: any;
 
-// Initialize the client
-// NOTE: We assume process.env.API_KEY is available as per instructions.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialization of the AI client to prevent crash on load if API key is missing/invalid
+let aiClient: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (!aiClient) {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      console.error("API_KEY is missing. Please check your .env file or Vercel environment variables.");
+      // We don't throw here to allow the UI to render, but calls will fail gracefully
+      throw new Error("API_KEY not configured");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+};
 
 /**
  * Helper function to retry operations with exponential backoff.
@@ -32,6 +44,7 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay
  */
 export const analyzeWord = async (word: string): Promise<WordAnalysis> => {
   return retryOperation(async () => {
+    const client = getAiClient();
     const prompt = `
       Role: You are an expert English teacher for a Chinese middle school student named Nicole (Wu Deyi).
       Task: Analyze the English word: "${word}" specifically for Nicole.
@@ -58,7 +71,7 @@ export const analyzeWord = async (word: string): Promise<WordAnalysis> => {
       13. VisualPrompt: (Legacy field) Use the visual prompt from the first scene here.
     `;
 
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
       config: {
@@ -130,13 +143,14 @@ export const analyzeWord = async (word: string): Promise<WordAnalysis> => {
 };
 
 /**
- * Generates an image based on the prompt.
+ * Generates an image based on the prompt using Nano Banana (gemini-2.5-flash-image).
  */
 export const generateWordImage = async (imagePrompt: string): Promise<string | null> => {
   try {
     return await retryOperation(async () => {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
+      const client = getAiClient();
+      const response = await client.models.generateContent({
+        model: "gemini-2.5-flash-image", // Nano Banana
         contents: {
           parts: [{ text: imagePrompt }],
         },
@@ -155,8 +169,9 @@ export const generateWordImage = async (imagePrompt: string): Promise<string | n
       return null;
     });
   } catch (e) {
-    console.error("Image generation failed after retries", e);
-    return null;
+    console.error("Image generation failed (Nano Banana):", e);
+    // Rethrow to allow UI to handle error display
+    throw e;
   }
 };
 
@@ -166,7 +181,8 @@ export const generateWordImage = async (imagePrompt: string): Promise<string | n
 export const generateAudio = async (textToSpeak: string): Promise<Uint8Array | null> => {
   try {
     return await retryOperation(async () => {
-      const response = await ai.models.generateContent({
+      const client = getAiClient();
+      const response = await client.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: textToSpeak }] }],
         config: {
@@ -186,7 +202,7 @@ export const generateAudio = async (textToSpeak: string): Promise<Uint8Array | n
       return null;
     });
   } catch (e) {
-    console.error("Audio generation failed after retries", e);
+    console.error("Audio generation failed:", e);
     return null;
   }
 };

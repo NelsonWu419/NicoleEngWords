@@ -45,6 +45,7 @@ export interface AppState {
   status: LoadingState;
   data: WordAnalysis | null;
   imageUrls: (string | null)[]; // Changed from single imageUrl to array
+  imageErrors: (string | null)[]; // New field: tracks error message for each scene
   audioData: Uint8Array | null; 
   error: string | null;
 }

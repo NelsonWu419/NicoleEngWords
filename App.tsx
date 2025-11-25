@@ -25,6 +25,7 @@ const App: React.FC = () => {
     status: LoadingState.IDLE,
     data: null,
     imageUrls: [], // Initialized as empty array
+    imageErrors: [], // Initialized as empty array
     audioData: null,
     error: null,
   });
@@ -126,6 +127,7 @@ const App: React.FC = () => {
           status: LoadingState.COMPLETE,
           data: wordData,
           imageUrls: [], // Don't persist large images
+          imageErrors: [],
           audioData: null,
           error: null
       });
@@ -133,15 +135,31 @@ const App: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const formatError = (error: any): string => {
+      const msg = error?.toString() || "";
+      if (msg.includes("429")) return "服务器繁忙(429)，请稍后重试";
+      if (msg.includes("400")) return "图片生成受限(400)，可能包含敏感词";
+      if (msg.includes("403")) return "权限不足(403)，请检查API Key设置";
+      return "生成失败，请点击重试";
+  };
+
   const handleRegenerateImage = async (index: number) => {
     if (!state.data) return;
 
-    // Set a temporary loading state for logic purposes, though we handle UI in component
-    // We don't want to reset the whole status to GENERATING_MEDIA as it might block other interactions
-    // Instead, we can temporarily clear the image URL at that index to trigger loading view in StoryCard
+    // Set a temporary loading state for specific image slot
     const newImageUrls = [...state.imageUrls];
     newImageUrls[index] = null;
-    setState(prev => ({ ...prev, imageUrls: newImageUrls, status: LoadingState.GENERATING_MEDIA }));
+    
+    // Clear error before retry
+    const newImageErrors = [...state.imageErrors];
+    newImageErrors[index] = null;
+
+    setState(prev => ({ 
+        ...prev, 
+        imageUrls: newImageUrls, 
+        imageErrors: newImageErrors,
+        status: LoadingState.GENERATING_MEDIA 
+    }));
 
     try {
       let prompt = "";
@@ -164,9 +182,14 @@ const App: React.FC = () => {
           status: LoadingState.COMPLETE
         };
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to regenerate image", e);
-      setState(prev => ({ ...prev, status: LoadingState.COMPLETE })); // Revert status
+      const errorMsg = formatError(e);
+      setState(prev => {
+          const updatedErrors = [...prev.imageErrors];
+          updatedErrors[index] = errorMsg;
+          return { ...prev, imageErrors: updatedErrors, status: LoadingState.COMPLETE };
+      });
     }
   };
 
@@ -175,6 +198,7 @@ const App: React.FC = () => {
       status: LoadingState.ANALYZING,
       data: null,
       imageUrls: [],
+      imageErrors: [],
       audioData: null,
       error: null,
     });
@@ -186,31 +210,53 @@ const App: React.FC = () => {
       // Save to history immediately after text analysis success
       saveToHistory(data);
       
-      setState((prev) => ({ ...prev, data, status: LoadingState.GENERATING_MEDIA }));
+      // Initialize empty placeholders for images and errors
+      const count = data.scenes && data.scenes.length > 0 ? data.scenes.length : 1;
+      const initialImageUrls = new Array(count).fill(null);
+      const initialImageErrors = new Array(count).fill(null);
 
-      // 2. Generate Media in Parallel
-      
-      // Handle Multi-scene images or Fallback single image
-      let imagePromises: Promise<string | null>[];
-      if (data.scenes && data.scenes.length > 0) {
-        imagePromises = data.scenes.map(scene => generateWordImage(scene.visualPrompt));
-      } else {
-        imagePromises = [generateWordImage(data.visualPrompt)];
-      }
+      setState((prev) => ({ 
+          ...prev, 
+          data, 
+          imageUrls: initialImageUrls,
+          imageErrors: initialImageErrors,
+          status: LoadingState.GENERATING_MEDIA 
+      }));
 
-      // Use only English parts for the audio to avoid mixing languages with English TTS voice
+      // 2. Generate Audio (Lightweight)
       const audioPrompt = `The word is ${data.word}. Listen to this rhythm: ${data.mnemonicChant}`;
-      const audioPromise = generateAudio(audioPrompt);
+      generateAudio(audioPrompt).then(audioData => {
+          setState(prev => ({ ...prev, audioData }));
+      }).catch(e => console.error("Audio failed", e));
 
-      const [imageResults, audioData] = await Promise.all([
-        Promise.all(imagePromises), 
-        audioPromise
-      ]);
+      // 3. Generate Images Sequentially to avoid Nano Banana Rate Limits
+      // If we request 5 images at once, the API often returns 429 Too Many Requests
+      const prompts = data.scenes && data.scenes.length > 0 
+          ? data.scenes.map(s => s.visualPrompt) 
+          : [data.visualPrompt];
+
+      // We process them one by one
+      for (let i = 0; i < prompts.length; i++) {
+          try {
+              const imgUrl = await generateWordImage(prompts[i]);
+              setState(prev => {
+                  const updatedUrls = [...prev.imageUrls];
+                  updatedUrls[i] = imgUrl;
+                  return { ...prev, imageUrls: updatedUrls };
+              });
+          } catch (e: any) {
+              console.error(`Image ${i} generation failed`, e);
+              const errorMsg = formatError(e);
+              setState(prev => {
+                  const updatedErrors = [...prev.imageErrors];
+                  updatedErrors[i] = errorMsg;
+                  return { ...prev, imageErrors: updatedErrors };
+              });
+          }
+      }
 
       setState((prev) => ({
         ...prev,
-        imageUrls: imageResults,
-        audioData,
         status: LoadingState.COMPLETE,
       }));
 
@@ -315,6 +361,7 @@ const App: React.FC = () => {
                             story={state.data.story}
                             scenes={state.data.scenes}
                             imageUrls={state.imageUrls} 
+                            imageErrors={state.imageErrors}
                             isLoading={state.status === LoadingState.GENERATING_MEDIA}
                             targetWord={state.data.word}
                             onRegenerateImage={handleRegenerateImage}

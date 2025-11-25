@@ -6,12 +6,13 @@ interface StoryCardProps {
   story: string;
   scenes?: StoryScene[];
   imageUrls: (string | null)[];
+  imageErrors?: (string | null)[]; // New prop for displaying errors
   isLoading?: boolean;
   targetWord: string;
   onRegenerateImage: (index: number) => void;
 }
 
-export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, isLoading = false, targetWord, onRegenerateImage }) => {
+export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, imageErrors = [], isLoading = false, targetWord, onRegenerateImage }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Reset index when content changes
@@ -21,6 +22,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
 
   const hasScenes = scenes && scenes.length > 0;
   const currentImage = imageUrls && imageUrls[currentIndex] ? imageUrls[currentIndex] : null;
+  const currentError = imageErrors && imageErrors[currentIndex] ? imageErrors[currentIndex] : null;
   const currentText = hasScenes ? scenes[currentIndex].narrative : story;
   const totalScenes = hasScenes ? scenes.length : 1;
 
@@ -95,7 +97,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
                ) : (
                    <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-900 p-8">
                        <div className="text-center flex flex-col items-center">
-                           {isLoading ? (
+                           {isLoading && !currentError ? (
                                <>
                                    <svg className="animate-spin w-10 h-10 mx-auto mb-3 text-primary/50 dark:text-indigo-400/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -106,7 +108,15 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
                            ) : (
                                <>
                                    <div className="mb-2 opacity-30 text-6xl">🎨</div>
-                                   <p className="text-sm font-medium mb-3">暂无图像</p>
+                                   {currentError ? (
+                                     <div className="mb-4 text-rose-500 dark:text-rose-400 text-sm px-4 py-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg max-w-xs">
+                                        <div className="font-bold mb-0.5">生成失败</div>
+                                        <div className="text-xs opacity-90">{currentError}</div>
+                                     </div>
+                                   ) : (
+                                     <p className="text-sm font-medium mb-3">暂无图像</p>
+                                   )}
+                                   
                                    <button 
                                       onClick={() => onRegenerateImage(currentIndex)}
                                       className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full text-sm font-medium text-primary dark:text-indigo-400 shadow-sm hover:shadow hover:bg-gray-50 dark:hover:bg-gray-600 transition-all active:scale-95"
