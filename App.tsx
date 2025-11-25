@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { InputSection } from './components/InputSection';
 import { WordCard } from './components/WordCard';
@@ -11,23 +12,53 @@ import { AppState, LoadingState, WordAnalysis, QuizResult } from './types';
 
 const STORAGE_KEY = 'nicole_vocab_history';
 const QUIZ_STATS_KEY = 'nicole_quiz_stats';
+const THEME_KEY = 'nicole_theme_pref';
+const FAVORITES_KEY = 'nicole_favorites';
 
 type ViewMode = 'LEARN' | 'REVIEW';
+type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('LEARN');
+  const [theme, setTheme] = useState<Theme>('light');
   const [state, setState] = useState<AppState>({
     status: LoadingState.IDLE,
     data: null,
-    imageUrl: null,
+    imageUrls: [], // Initialized as empty array
     audioData: null,
     error: null,
   });
 
   const [history, setHistory] = useState<WordAnalysis[]>([]);
+  const [favorites, setFavorites] = useState<WordAnalysis[]>([]);
   const [lastQuizResult, setLastQuizResult] = useState<QuizResult | null>(null);
 
-  // Load history and stats on mount
+  // Initialize Theme
+  useEffect(() => {
+    const savedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem(THEME_KEY, newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  // Load history, stats, and favorites on mount
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem(STORAGE_KEY);
@@ -37,6 +68,10 @@ const App: React.FC = () => {
       const savedStats = localStorage.getItem(QUIZ_STATS_KEY);
       if (savedStats) {
         setLastQuizResult(JSON.parse(savedStats));
+      }
+      const savedFavorites = localStorage.getItem(FAVORITES_KEY);
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites));
       }
     } catch (e) {
       console.error("Failed to load storage", e);
@@ -58,6 +93,20 @@ const App: React.FC = () => {
     });
   };
 
+  const handleToggleFavorite = (wordData: WordAnalysis) => {
+    setFavorites((prev) => {
+      const isFavorite = prev.some((item) => item.word.toLowerCase() === wordData.word.toLowerCase());
+      let newFavorites;
+      if (isFavorite) {
+        newFavorites = prev.filter((item) => item.word.toLowerCase() !== wordData.word.toLowerCase());
+      } else {
+        newFavorites = [wordData, ...prev];
+      }
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
+
   const handleSaveQuizResult = (result: QuizResult) => {
       setLastQuizResult(result);
       localStorage.setItem(QUIZ_STATS_KEY, JSON.stringify(result));
@@ -76,7 +125,7 @@ const App: React.FC = () => {
       setState({
           status: LoadingState.COMPLETE,
           data: wordData,
-          imageUrl: null, // Don't persist large images
+          imageUrls: [], // Don't persist large images
           audioData: null,
           error: null
       });
@@ -88,7 +137,7 @@ const App: React.FC = () => {
     setState({
       status: LoadingState.ANALYZING,
       data: null,
-      imageUrl: null,
+      imageUrls: [],
       audioData: null,
       error: null,
     });
@@ -103,17 +152,27 @@ const App: React.FC = () => {
       setState((prev) => ({ ...prev, data, status: LoadingState.GENERATING_MEDIA }));
 
       // 2. Generate Media in Parallel
-      const imagePromise = generateWordImage(data.visualPrompt);
       
+      // Handle Multi-scene images or Fallback single image
+      let imagePromises: Promise<string | null>[];
+      if (data.scenes && data.scenes.length > 0) {
+        imagePromises = data.scenes.map(scene => generateWordImage(scene.visualPrompt));
+      } else {
+        imagePromises = [generateWordImage(data.visualPrompt)];
+      }
+
       // Use only English parts for the audio to avoid mixing languages with English TTS voice
       const audioPrompt = `The word is ${data.word}. Listen to this rhythm: ${data.mnemonicChant}`;
       const audioPromise = generateAudio(audioPrompt);
 
-      const [imageUrl, audioData] = await Promise.all([imagePromise, audioPromise]);
+      const [imageResults, audioData] = await Promise.all([
+        Promise.all(imagePromises), 
+        audioPromise
+      ]);
 
       setState((prev) => ({
         ...prev,
-        imageUrl,
+        imageUrls: imageResults,
         audioData,
         status: LoadingState.COMPLETE,
       }));
@@ -129,32 +188,49 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-[#f3f4f6]">
+    <div className="min-h-screen pb-20 bg-[#f3f4f6] dark:bg-gray-900 transition-colors duration-300">
       {/* Header / Background Decoration */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-         <div className="absolute -top-[300px] -left-[200px] w-[600px] h-[600px] bg-purple-200/40 rounded-full blur-3xl opacity-50"></div>
-         <div className="absolute top-[100px] -right-[200px] w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-3xl opacity-50"></div>
+         <div className="absolute -top-[300px] -left-[200px] w-[600px] h-[600px] bg-purple-200/40 dark:bg-purple-900/20 rounded-full blur-3xl opacity-50"></div>
+         <div className="absolute top-[100px] -right-[200px] w-[500px] h-[500px] bg-indigo-200/40 dark:bg-indigo-900/20 rounded-full blur-3xl opacity-50"></div>
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+      <nav className="relative z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 transition-colors duration-300">
           <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-              <div className="font-bold text-xl tracking-tight text-gray-800">
-                  Nicole<span className="text-primary">单词通</span>
+              <div className="font-bold text-xl tracking-tight text-gray-800 dark:text-gray-100">
+                  Nicole<span className="text-primary dark:text-indigo-400">单词通</span>
               </div>
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                  <button 
-                    onClick={() => setViewMode('LEARN')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'LEARN' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Toggle Dark Mode"
                   >
-                    学习模式
+                    {theme === 'light' ? (
+                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                       </svg>
+                    ) : (
+                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                       </svg>
+                    )}
                   </button>
-                  <button 
-                    onClick={() => setViewMode('REVIEW')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'REVIEW' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    复习挑战
-                  </button>
+                  <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                      <button 
+                        onClick={() => setViewMode('LEARN')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'LEARN' ? 'bg-white dark:bg-gray-700 text-primary dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      >
+                        学习模式
+                      </button>
+                      <button 
+                        onClick={() => setViewMode('REVIEW')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'REVIEW' ? 'bg-white dark:bg-gray-700 text-primary dark:text-indigo-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      >
+                        复习挑战
+                      </button>
+                  </div>
               </div>
           </div>
       </nav>
@@ -172,7 +248,7 @@ const App: React.FC = () => {
                 <InputSection onSearch={handleSearch} loadingStatus={state.status} />
 
                 {state.error && (
-                    <div className="max-w-2xl mx-auto p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-center animate-fade-in">
+                    <div className="max-w-2xl mx-auto p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-300 text-center animate-fade-in">
                         出错了: {state.error}
                     </div>
                 )}
@@ -180,7 +256,12 @@ const App: React.FC = () => {
                 {state.data && (
                     <div className="max-w-4xl mx-auto animate-fade-in-up transition-all duration-500 ease-out">
                         {/* Main Word Card */}
-                        <WordCard data={state.data} audioData={state.audioData} />
+                        <WordCard 
+                            data={state.data} 
+                            audioData={state.audioData} 
+                            isFavorite={favorites.some(f => f.word.toLowerCase() === state.data!.word.toLowerCase())}
+                            onToggleFavorite={() => handleToggleFavorite(state.data!)}
+                        />
                         
                         {/* Etymology & Roots */}
                         <EtymologySection data={state.data} />
@@ -194,9 +275,11 @@ const App: React.FC = () => {
 
                         {/* Story & Image */}
                         <StoryCard 
-                            story={state.data.story} 
-                            imageUrl={state.imageUrl} 
+                            story={state.data.story}
+                            scenes={state.data.scenes}
+                            imageUrls={state.imageUrls} 
                             isLoading={state.status === LoadingState.GENERATING_MEDIA}
+                            targetWord={state.data.word}
                         />
                     </div>
                 )}

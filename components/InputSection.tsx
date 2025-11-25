@@ -23,10 +23,10 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
 
   return (
     <div className="w-full max-w-2xl mx-auto text-center py-10">
-      <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 tracking-tight">
-        Nicole<span className="text-primary">单词通</span>
+      <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4 tracking-tight">
+        Nicole<span className="text-primary dark:text-indigo-400">单词通</span>
       </h1>
-      <p className="text-gray-500 mb-8 text-lg">
+      <p className="text-gray-500 dark:text-gray-400 mb-8 text-lg">
         Nicole的专属单词魔法书 —— 探索单词的起源，声音与灵魂。
       </p>
 
@@ -34,7 +34,7 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
         <div className="relative w-full">
           <input
             type="text"
-            className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm transition-all text-gray-700 bg-white"
+            className="w-full px-6 py-4 text-lg border-2 border-gray-200 dark:border-gray-700 rounded-full focus:outline-none focus:border-primary dark:focus:border-indigo-400 focus:ring-2 focus:ring-primary/20 dark:focus:ring-indigo-400/20 shadow-sm transition-all text-gray-700 dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Nicole, 今天想学哪个单词？"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -44,7 +44,9 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
             type="submit"
             disabled={isLoading || !input.trim()}
             className={`absolute right-2 top-2 bottom-2 px-6 rounded-full font-medium text-white transition-all transform duration-200 
-              ${isLoading || !input.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary hover:bg-indigo-700 hover:shadow-md active:scale-95'}
+              ${isLoading || !input.trim() 
+                ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-500' 
+                : 'bg-primary dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 hover:shadow-md active:scale-95'}
             `}
           >
             {isLoading ? (
@@ -63,7 +65,7 @@ export const InputSection: React.FC<InputSectionProps> = ({ onSearch, loadingSta
       </form>
       
       {isLoading && (
-         <div className="mt-4 text-sm font-medium text-primary animate-pulse">
+         <div className="mt-4 text-sm font-medium text-primary dark:text-indigo-400 animate-pulse">
            {loadingStatus === LoadingState.ANALYZING && "正在解构词源与释义..."}
            {loadingStatus === LoadingState.GENERATING_MEDIA && "正在生成记忆图像与助记音乐..."}
          </div>
