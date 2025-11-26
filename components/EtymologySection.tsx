@@ -3,13 +3,14 @@ import { WordAnalysis } from '../types';
 
 interface EtymologySectionProps {
   data: WordAnalysis;
+  onWordClick: (word: string) => void;
 }
 
-export const EtymologySection: React.FC<EtymologySectionProps> = ({ data }) => {
+export const EtymologySection: React.FC<EtymologySectionProps> = ({ data, onWordClick }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       {/* Origin Card */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 transition-colors duration-300 flex flex-col">
         <div className="flex items-center gap-2 mb-4">
             <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -18,7 +19,7 @@ export const EtymologySection: React.FC<EtymologySectionProps> = ({ data }) => {
             </div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">词源演变 (Origin)</h3>
         </div>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm md:text-base">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm md:text-base flex-grow">
           {data.etymology}
         </p>
       </div>
@@ -34,20 +35,42 @@ export const EtymologySection: React.FC<EtymologySectionProps> = ({ data }) => {
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">词根拆解 (Roots)</h3>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {data.roots.map((root, idx) => (
-            <div key={idx} className="border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
-              <div className="flex justify-between items-baseline">
-                <span className="font-bold text-gray-800 dark:text-gray-100 text-lg">{root.root}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 italic">{root.meaning}</span>
+            <div 
+              key={idx} 
+              className="group bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-sm transition-all duration-200"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <button 
+                  onClick={() => onWordClick(root.root)}
+                  className="font-bold text-emerald-700 dark:text-emerald-400 text-lg font-mono tracking-tight hover:underline hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors text-left"
+                  title={`点击探索词根: ${root.root}`}
+                >
+                  {root.root}
+                </button>
+                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                  {root.meaning}
+                </span>
               </div>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {root.examples.map((ex, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md">
-                    {ex}
-                  </span>
-                ))}
-              </div>
+
+              {root.examples && root.examples.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {root.examples.map((ex, i) => (
+                        <button
+                           key={i}
+                           onClick={() => onWordClick(ex)}
+                           className="text-xs px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1"
+                           title={`点击学习: ${ex}`}
+                        >
+                           {ex}
+                           <svg className="w-2.5 h-2.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                           </svg>
+                        </button>
+                    ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
