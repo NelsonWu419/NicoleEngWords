@@ -110,7 +110,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({ story, scenes, imageUrls, 
                                    <div className="mb-2 opacity-30 text-6xl">🎨</div>
                                    {currentError ? (
                                      <div className="mb-4 text-rose-500 dark:text-rose-400 text-sm px-4 py-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg max-w-xs">
-                                        <div className="font-bold mb-0.5">生成失败</div>
+                                        <div className="font-bold mb-0.5">未生成图片</div>
                                         <div className="text-xs opacity-90">{currentError}</div>
                                      </div>
                                    ) : (

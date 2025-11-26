@@ -56,3 +56,16 @@ export interface QuizResult {
   totalQuestions: number;
   correctCount: number;
 }
+
+export interface User {
+  name: string;
+  avatar?: string;
+}
+
+export type AIProvider = 'GEMINI' | 'QWEN';
+
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey: string;
+  model: string; // e.g., 'gemini-2.5-flash' or 'qwen-plus'
+}

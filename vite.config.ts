@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // Declare process to satisfy TypeScript without @types/node
 declare const process: any;
@@ -12,6 +13,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        '@': process.cwd(),
+      },
+    },
     define: {
       // This enables process.env.API_KEY to work in the client-side code
       // by replacing it with the string value during build time.
